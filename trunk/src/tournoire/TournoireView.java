@@ -16,6 +16,7 @@ import javax.swing.Timer;
 import javax.swing.Icon;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
+import tournoire.backgrounddata.BackgroundDao;
 
 /**
  * The application's main frame.
@@ -27,6 +28,15 @@ public class TournoireView extends FrameView {
 
         initComponents();
 
+        try
+        {
+            BackgroundDao dao = new BackgroundDao();
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+        
         // status bar initialization - message timeout, idle icon and busy animation, etc
         ResourceMap resourceMap = getResourceMap();
         int messageTimeout = resourceMap.getInteger("StatusBar.messageTimeout");
