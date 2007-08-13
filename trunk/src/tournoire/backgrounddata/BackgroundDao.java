@@ -7,6 +7,8 @@
 
 package tournoire.backgrounddata;
 
+import tournoire.Player;
+import tournoire.District;
 import com.Ostermiller.util.CSVParser;
 import com.Ostermiller.util.CSVPrinter;
 import com.Ostermiller.util.LabeledCSVParser;
@@ -19,7 +21,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,7 +34,9 @@ import java.util.logging.Logger;
 import tournoire.AppException;
 
 /**
- *
+ *Data Access Object for accessing the background data.
+ * The underlying databae corresponds to that from the DSB
+ * 
  * @author rca
  */
 public class BackgroundDao
@@ -119,6 +122,7 @@ public class BackgroundDao
         try 
         {
             dbConnection = DriverManager.getConnection(dbUrl, dbProperties);
+            /*
             DatabaseMetaData metaData = dbConnection.getMetaData();
             String[] types = {"TABLE"};
             ResultSet tableNames = metaData.getTables(null, "%", "%", types);
@@ -126,11 +130,14 @@ public class BackgroundDao
             {
                 System.out.println(tableNames.getString("TABLE_NAME"));
             }
+             * */
             isConnected = dbConnection != null;
             if(isConnected)
             {
                 psSelectVerbaende = dbConnection.prepareStatement(stmtSelectVerbaende);
                 psSelectSpieler = dbConnection.prepareStatement(stmtSelectSpieler);
+                psSelectSpielerVerband = dbConnection.prepareStatement(stmtSelectSpielerVerband);
+                psSelectSpielerVerein = dbConnection.prepareStatement(stmtSelectSpielerVerein);
             }
         }
         catch (SQLException ex) 
@@ -215,26 +222,26 @@ public class BackgroundDao
 
     //Access Data
     /**
-     * Get a list of all Verbände in the database
+     * Get a list of all districts in the database
      *
      * @return
      * @throws tournoire.AppException 
      */
-    public List<DwzVerband> getVerbaende()
+    public List<District> getDistricts()
     throws AppException 
     {
-        List<DwzVerband> result = new java.util.ArrayList<DwzVerband>();
+        List<District> result = new java.util.ArrayList<District>();
         ResultSet results = null;
         try
         {
             results = psSelectVerbaende.executeQuery();
             while(results.next())
             {
-                DwzVerband verband = new DwzVerband();
-                verband.setVerband(results.getString(1));
+                District verband = new District();
+                verband.setId(results.getString(1));
                 verband.setLv(results.getString(2).charAt(0));
-                verband.setUebergeordnet(results.getString(3));
-                verband.setVerbandname(results.getString(4));
+                verband.setParentId(results.getString(3));
+                verband.setName(results.getString(4));
                 
                 result.add(verband);
             }
@@ -247,18 +254,18 @@ public class BackgroundDao
         return result;
     }
     
-    public List<DwzSpieler> getSpieler(String nameBegin, int count)
+    /**
+     * Get the players based on the beginning of their name
+     * 
+     * @param nameBegin The string the name has to start with
+     * @param count Maximum number of entries to be returned
+     * @return 
+     * @throws tournoire.AppException 
+     */
+    public List<Player> getPlayers(String nameBegin, int count)
     throws AppException 
     {   
-        String searchString;
-        if(isNullOrEmpty(nameBegin))
-        {
-            searchString = "%";
-        }
-        else
-        {
-            searchString = nameBegin.toLowerCase() + "%";
-        }
+        String searchString = getWordBeginPattern(nameBegin);
         try
         {
             psSelectSpieler.setString(1, searchString);
@@ -268,8 +275,45 @@ public class BackgroundDao
             Logger.getLogger("global").log(Level.SEVERE, null, ex);
             throw new AppException("BackgroundDao.CouldNotGetSpieler");
         }
-        return getSpieler(psSelectSpieler, count);
+        return getPlayers(psSelectSpieler, count);
     }
+    
+    /**
+     * Get the players of a specific district
+     * 
+     * @param nameBegin The string the name has to start with
+     * @param verband Id of the district
+     * @param count Maximum number of entries to be returned
+     * @return 
+     * @throws tournoire.AppException 
+     */
+    public List<Player> getPlayeresOfDistrict(String nameBegin, String verband, int count)
+    throws AppException 
+    {   
+        String sVerband = null;
+        if(!isNullOrEmpty(verband))
+        {
+            sVerband = getWordBeginPattern(verband);
+        }
+        return getPlayers(nameBegin, sVerband, psSelectSpielerVerband, count);
+    }
+    
+    /**
+     * Get the players of a specific club
+     * 
+     * @param nameBegin The string the name has to start with 
+     * @param zps Id of the club 
+     * @param count Maximum number of entries to be returned 
+     * @return 
+     * @throws tournoire.AppException 
+     */
+    public List<Player> getPlayersOfClub(String nameBegin, String zps, int count)
+    throws AppException 
+    {   
+        return getPlayers(nameBegin, zps, psSelectSpielerVerein, count);
+    }
+
+    
     
     
 
@@ -583,10 +627,10 @@ public class BackgroundDao
     
     //retrieving Data
     
-    private List<DwzSpieler> getSpieler(PreparedStatement ps, int count)
+    private List<Player> getPlayers(PreparedStatement ps, int count)
     throws AppException 
     {
-        List<DwzSpieler> result = new ArrayList<DwzSpieler>();
+        List<Player> result = new ArrayList<Player>();
         ResultSet resultSet = null;
         try
         {
@@ -594,19 +638,17 @@ public class BackgroundDao
             resultSet = ps.executeQuery();
             while(resultSet.next())
             {
-                DwzSpieler spieler = new DwzSpieler();
-                spieler.setDWZIndex(resultSet.getShort("DWZ_Index") );
-                spieler.setDwz(resultSet.getShort("DWZ"));
-                spieler.setFIDEElo(resultSet.getShort("FIDE_Elo"));
-                spieler.setFIDELand(resultSet.getString("FIDE_Land"));
-                spieler.setFIDETitel(resultSet.getString("FIDE_Titel"));
+                Player spieler = new Player();
+                spieler.setNRatingIndex(resultSet.getShort("DWZ_Index") );
+                spieler.setNRating(resultSet.getShort("DWZ"));
+                spieler.setFideElo(resultSet.getShort("FIDE_Elo"));
+                spieler.setFideCountry(resultSet.getString("FIDE_Land"));
+                spieler.setFideTitle(resultSet.getString("FIDE_Titel"));
                 spieler.setFideId(resultSet.getString("FIDE_ID"));
-                spieler.setGeburtsjahr(resultSet.getShort("Geburtsjahr"));
-                spieler.setGeschlecht(resultSet.getString("Geschlecht"));
-                spieler.setLetzteAuswertung(resultSet.getString("Letzte_Auswertung"));
-                spieler.setSpielberechtigung(resultSet.getString("Spielberechtigung"));
-                spieler.setSpielername(resultSet.getString("Spielername"));
-                //spieler.setSpielernameG(resultSet.getString("Spielername_G"));                
+                spieler.setYearOfBirth(resultSet.getShort("Geburtsjahr"));
+                spieler.setSex(resultSet.getString("Geschlecht"));
+                spieler.setActivity(resultSet.getString("Spielberechtigung"));
+                spieler.setName(resultSet.getString("Spielername"));               
                 spieler.setStatus(resultSet.getString("Status"));
                 
                 result.add(spieler);
@@ -618,8 +660,42 @@ public class BackgroundDao
             throw new AppException("BackgroundDao.CouldNotGetSpieler");
         }
         
-        return result;
+        return result;        
+    }
+       
+    private List<Player> getPlayers(String nameBegin, String zps, PreparedStatement ps, int count)
+    throws AppException 
+    {   
+        if(isNullOrEmpty(zps))
+        {
+            return getPlayers(nameBegin, count);
+        }
         
+        String searchString = getWordBeginPattern(nameBegin);
+        try
+        {
+            ps.setString(1, searchString);
+            ps.setString(2, zps);
+        }
+        catch (SQLException ex)
+        {
+            Logger.getLogger("global").log(Level.SEVERE, null, ex);
+            throw new AppException("BackgroundDao.CouldNotGetSpieler");
+        }
+        return getPlayers(ps, count);
+    }
+    
+    private String getWordBeginPattern(String nameBegin)
+    {
+        java.lang.String searchString;
+        if (isNullOrEmpty(nameBegin))
+        {
+            searchString = "%";
+        } else
+        {
+            searchString = nameBegin.toLowerCase() + "%";
+        }
+        return searchString;
     }
     
     ////////////////////////////////////////////////////////////////////////////////  
@@ -641,12 +717,20 @@ public class BackgroundDao
     //prepared statements
     private PreparedStatement psSelectVerbaende;
     private PreparedStatement psSelectSpieler;
+    private PreparedStatement psSelectSpielerVerband;
+    private PreparedStatement psSelectSpielerVerein;
     
     //SQL-expressions
     private static final String stmtSelectVerbaende = 
             "SELECT * FROM \"APP.DWZ_VERBAENDE\"";
     private static final String stmtSelectSpieler = 
             "SELECT * FROM \"APP.DWZ_SPIELER\" WHERE \"SpielernameL\" LIKE ?";
+    private static final String stmtSelectSpielerVerband = 
+            "SELECT * FROM \"APP.DWZ_SPIELER\" \n" + "" +
+            "WHERE \"SpielernameL\" LIKE ? AND \"ZPS\" LIKE ?";
+    private static final String stmtSelectSpielerVerein = 
+            "SELECT * FROM \"APP.DWZ_SPIELER\" \n" + "" +
+            "WHERE \"SpielernameL\" LIKE ? AND \"ZPS\" = ?";
     
     ////////////////////////////////////////////////////////////////////////////////
 }

@@ -7,6 +7,8 @@
 
 package tournoire.backgrounddata;
 
+import tournoire.Player;
+import tournoire.District;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.List;
@@ -47,7 +49,8 @@ public class BackgroundDaoTest
         writer.println("\"24421\",\"201\",\"\",\"Volokitin,Andrej\",\"M\",\"A\",\"1986\",\"200715\",\"2698\",\"23\",\"2681\",\"GM\",\"14107090\",\"UKR\"");
         writer.println("\"24421\",\"135\",\"\",\"Bromberger,Stefan\",\"M\",\"D\",\"1982\",\"200730\",\"2461\",\"100\",\"2500\",\"IM\",\"4635248\",\"GER\"");
         writer.println("\"24420\",\"302\",\"P\",\"Bromberger,Stefan\",\"M\",\"D\",\"1982\",\"200730\",\"2461\",\"100\",\"2500\",\"IM\",\"4635248\",\"GER\"");
-        writer.println("\"23017\",\"106\",\"\",\"Zwack,Hans\",\"M\",\"D\",\"1990\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"");
+        writer.println("\"23017\",\"106\",\"\",\"Zwack,Hans\",\"M\",\"D\",\"1990\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"");        
+        writer.println("\"23017\",\"107\",\"\",\"Zwick,Herbert\",\"M\",\"D\",\"1980\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"");
         writer.println("\"21206\",\"252\",\"\",\"Zwack,Hansemann\",\"M\",\"D\",\"1958\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"");
        
         writer.close();
@@ -65,16 +68,14 @@ public class BackgroundDaoTest
         //writer.println("");
         writer.close();
         
-        System.out.println(tmpSpielerCsv.getAbsolutePath() + " erzeugt");
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception
     {
-        //tmpSpielerCsv.delete();
+        tmpSpielerCsv.delete();
         tmpVerbaendeCsv.delete();
         tmpVereineCsv.delete();
-        System.out.println(tmpSpielerCsv.getAbsolutePath() + " grelöscht");
     }
 
     @Before
@@ -123,24 +124,24 @@ public class BackgroundDaoTest
 
 
     @Test
-    public void getVerbaende()
+    public void getDistricts()
     {
         try
         {
-            java.lang.System.out.println("getVerbaende");
+            java.lang.System.out.println("getDisricts");
             tournoire.backgrounddata.BackgroundDao instance = new tournoire.backgrounddata.BackgroundDao();
             instance.clear();
             instance.loadDsbCsvFiles(tempDir);
-            List<DwzVerband> result = instance.getVerbaende();
+            List<District> result = instance.getDistricts();
             assertEquals(5, result.size());
             boolean found = false;
-            for(DwzVerband verband : result)
+            for(District verband : result)
             {
-                if(verband.getVerband().equals("220"))
+                if(verband.getId().equals("220"))
                 {
                     found = true;
-                    assertEquals("München", verband.getVerbandname());
-                    assertEquals("200", verband.getUebergeordnet());
+                    assertEquals("München", verband.getName());
+                    assertEquals("200", verband.getParentId());
                     assertEquals('2', verband.getLv());
                 }
             }
@@ -151,43 +152,55 @@ public class BackgroundDaoTest
             Logger.getLogger("global").log(Level.SEVERE, null, ex);
             fail("Exception occurred");
         }
-    } /* Test of getVerbaende method, of class BackgroundDao. */
+    } /* Test of getDistricts method, of class BackgroundDao. */
         
     
     @Test
-    public void getSpieler()
+    public void getPlayers()
     {
         try
         {
-            java.lang.System.out.println("getSpieler");
+            java.lang.System.out.println("getPlayers");
             tournoire.backgrounddata.BackgroundDao instance = new tournoire.backgrounddata.BackgroundDao();
             instance.clear();
             instance.loadDsbCsvFiles(tempDir);
             
             //no player found
-            List<DwzSpieler> result = instance.getSpieler("xxx", 0);
+            List<Player> result = instance.getPlayers("xxx", 0);
             assertEquals(0, result.size());
             
             //all players
-            result = instance.getSpieler("", 0);
-            assertEquals(5, result.size());
+            result = instance.getPlayers("", 0);
+            assertEquals(6, result.size());
             //subset
-            result = instance.getSpieler("", 3);
-            assertEquals(3, result.size());
-            
+            result = instance.getPlayers("", 3);
+            assertEquals(3, result.size());            
             
             //pattern search
-            result = instance.getSpieler("Zwack", 0);
+            result = instance.getPlayers("Zwack", 0);
             assertEquals(2, result.size());
-            result = instance.getSpieler("zwack", 0);
+            result = instance.getPlayers("zwack", 0);
             assertEquals(2, result.size());
+            
+            //player of a district
+            result = instance.getPlayeresOfDistrict("", "244", 0);
+            assertEquals(3, result.size());
+            result = instance.getPlayeresOfDistrict("b", "244", 0);
+            assertEquals(2, result.size());
+            
+            //player of a club
+            result = instance.getPlayersOfClub("", "23017", 0);
+            assertEquals(2, result.size());
+            result = instance.getPlayersOfClub("zwi", "23017", 0);
+            assertEquals(1, result.size());
+            assertEquals("Zwick,Herbert", result.get(0).getName());
         } 
         catch (AppException ex)
         {
             Logger.getLogger("global").log(Level.SEVERE, null, ex);
             fail("Exception occurred");
         }
-    } /* Test of getSpieler method, of class BackgroundDao. */
+    } /* Test of getPlayers* methods, of class BackgroundDao. */
     
     
     private static String tempDir;

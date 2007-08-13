@@ -20,12 +20,12 @@ public class Participant
     {
     }
     
-    public int getElo()
+    public int getFideElo()
     {
         return elo;
     }
 
-    public void setElo(int elo)
+    public void setFideElo(short elo)
     {
         this.elo = elo;
     }
@@ -40,14 +40,14 @@ public class Participant
         this.name = name;
     }
 
-    public int getNwz()
+    public int getNRating()
     {
-        return nwz;
+        return nRating;
     }
 
-    public void setNwz(int nwz)
+    public void setNRating(short nwz)
     {
-        this.nwz = nwz;
+        this.nRating = nwz;
     }
     
     public Club getClub()
@@ -73,8 +73,8 @@ public class Participant
     
     
     private String name;
-    private int nwz;
-    private int elo;
+    private short nRating;
+    private short elo;
     private Club club;
     private Date birthday;
 
