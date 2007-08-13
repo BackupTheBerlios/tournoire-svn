@@ -64,7 +64,12 @@ public class BackGroundFixation
             writer.close();
 
             writer = new java.io.PrintWriter(tmpVereineCsv);
-            //writer.println("");
+  
+            writer.println("\"24420\",\"2\",\"244\",\"SC Starnberg\"");          
+            writer.println("\"24421\",\"2\",\"244\",\"TV Tegernsee\"");
+            writer.println("\"23017\",\"2\",\"230\",\"SC Vilshofen\"");
+            writer.println("\"21206\",\"2\",\"212\",\"SF Fürth\"");
+        
             writer.close();
         } catch (IOException ex)
         {

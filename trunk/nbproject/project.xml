@@ -13,8 +13,6 @@
             </test-roots>
         </data>
         <junit-version xmlns="http://www.netbeans.org/ns/junit/1" value="junit4"/>
-        <swingapp xmlns="http://www.netbeans.org/ns/form-swingapp/1">
-            <application-class name="tournoire.TournoireApp"/>
-        </swingapp>
+        <swingapp xmlns="http://www.netbeans.org/ns/form-swingapp/1"/>
     </configuration>
 </project>

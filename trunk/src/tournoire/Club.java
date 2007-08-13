@@ -7,6 +7,7 @@
 
 package tournoire;
 
+import java.util.HashMap;
 
 /**
  *
@@ -14,22 +15,23 @@ package tournoire;
  */
 public class Club
 {
+    public static Club createClub(String id, String lv, String district, String name)
+    {
+        Club club = new Club(id, lv, district, name);
+        
+        clubs.put(id, club);
+        return club;
+    }
     
-    private String id;
-    private char lv;
-    private String district;
-    private String name;
-
-    public Club() 
+    public static Club getClub(String id)
     {
+        return clubs.get(id);
     }
 
-    public Club(String id)
-    {
-        this.id = id;
-    }
+    private static HashMap<String, Club> clubs = new HashMap<String, Club>();
+    
 
-    public Club(String id, char lv, String district, String name)
+    private Club(String id, String lv, String district, String name)
     {
         this.id = id;
         this.lv = lv;
@@ -47,12 +49,12 @@ public class Club
         this.id = zps;
     }
 
-    public char getLv()
+    public String getLv()
     {
         return lv;
     }
 
-    public void setLv(char lv)
+    public void setLv(String lv)
     {
         this.lv = lv;
     }
@@ -105,5 +107,11 @@ if (!(object instanceof Club))
     {
         return getName();
     }
+    
+    
+    private String id;
+    private String lv;
+    private String district;
+    private String name;
 
 }

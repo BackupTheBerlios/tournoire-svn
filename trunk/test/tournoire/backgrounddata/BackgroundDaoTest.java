@@ -144,6 +144,8 @@ public class BackgroundDaoTest
             assertEquals(2, result.size());
             result = instance.getPlayers("zwack", 0);
             assertEquals(2, result.size());
+            assertEquals("SC Vilshofen", result.get(0).getClub().getName());
+            assertEquals("SF Fürth", result.get(1).getClub().getName());
             
             //player of a district
             result = instance.getPlayeresOfDistrict("", "244", 0);

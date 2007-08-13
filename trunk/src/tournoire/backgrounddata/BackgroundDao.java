@@ -32,6 +32,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import tournoire.AppException;
+import tournoire.Club;
 
 /**
  *Data Access Object for accessing the background data.
@@ -138,6 +139,8 @@ public class BackgroundDao
                 psSelectSpieler = dbConnection.prepareStatement(stmtSelectSpieler);
                 psSelectSpielerVerband = dbConnection.prepareStatement(stmtSelectSpielerVerband);
                 psSelectSpielerVerein = dbConnection.prepareStatement(stmtSelectSpielerVerein);
+                psSelectClub = dbConnection.prepareStatement(stmtSelectClub);
+                psSelectClubsOfDistricts = dbConnection.prepareStatement(stmtSelectClubsOfDistrict);
             }
         }
         catch (SQLException ex) 
@@ -627,6 +630,35 @@ public class BackgroundDao
     
     //retrieving Data
     
+    
+    private Club getClub(String id)
+    {
+        Club res = Club.getClub(id);
+        if(res == null)
+        {
+            try
+            {
+                psSelectClub.clearParameters();
+                psSelectClub.setString(1, id);
+                java.sql.ResultSet resultSet = psSelectClub.executeQuery();
+                if(resultSet.next())
+                {
+                    res = Club.createClub(id,
+                            resultSet.getString("LV"),
+                            resultSet.getString("Verband"),
+                            resultSet.getString("Vereinname"));
+                }
+                
+            }
+            catch (SQLException ex)
+            {
+                Logger.getLogger("global").log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        return res;
+    }
+    
     private List<Player> getPlayers(PreparedStatement ps, int count)
     throws AppException 
     {
@@ -638,20 +670,21 @@ public class BackgroundDao
             resultSet = ps.executeQuery();
             while(resultSet.next())
             {
-                Player spieler = new Player();
-                spieler.setNRatingIndex(resultSet.getShort("DWZ_Index") );
-                spieler.setNRating(resultSet.getShort("DWZ"));
-                spieler.setFideElo(resultSet.getShort("FIDE_Elo"));
-                spieler.setFideCountry(resultSet.getString("FIDE_Land"));
-                spieler.setFideTitle(resultSet.getString("FIDE_Titel"));
-                spieler.setFideId(resultSet.getString("FIDE_ID"));
-                spieler.setYearOfBirth(resultSet.getShort("Geburtsjahr"));
-                spieler.setSex(resultSet.getString("Geschlecht"));
-                spieler.setActivity(resultSet.getString("Spielberechtigung"));
-                spieler.setName(resultSet.getString("Spielername"));               
-                spieler.setStatus(resultSet.getString("Status"));
+                Player player = new Player();
+                player.setNRatingIndex(resultSet.getShort("DWZ_Index") );
+                player.setNRating(resultSet.getShort("DWZ"));
+                player.setFideElo(resultSet.getShort("FIDE_Elo"));
+                player.setFideCountry(resultSet.getString("FIDE_Land"));
+                player.setFideTitle(resultSet.getString("FIDE_Titel"));
+                player.setFideId(resultSet.getString("FIDE_ID"));
+                player.setYearOfBirth(resultSet.getShort("Geburtsjahr"));
+                player.setSex(resultSet.getString("Geschlecht"));
+                player.setActivity(resultSet.getString("Spielberechtigung"));
+                player.setName(resultSet.getString("Spielername"));               
+                player.setStatus(resultSet.getString("Status"));
+                player.setClub(getClub(resultSet.getString("ZPS")));
                 
-                result.add(spieler);
+                result.add(player);
             }
         } 
         catch (SQLException ex)
@@ -719,17 +752,25 @@ public class BackgroundDao
     private PreparedStatement psSelectSpieler;
     private PreparedStatement psSelectSpielerVerband;
     private PreparedStatement psSelectSpielerVerein;
+    private PreparedStatement psSelectClub;
+    private PreparedStatement psSelectClubsOfDistricts;
     
     //SQL-expressions
     private static final String stmtSelectVerbaende = 
             "SELECT * FROM \"APP.DWZ_VERBAENDE\"";
+    private static final String stmtSelectClub = 
+            "SELECT * FROM \"APP.DWZ_VEREINE\" \n" +
+            "WHERE \"ZPS\" = ?";
+    private static final String stmtSelectClubsOfDistrict = 
+            "SELECT * FROM \"APP.DWZ_VEREINE\" \n" +
+            "WHERE \"Verband\" = ?";
     private static final String stmtSelectSpieler = 
             "SELECT * FROM \"APP.DWZ_SPIELER\" WHERE \"SpielernameL\" LIKE ?";
     private static final String stmtSelectSpielerVerband = 
             "SELECT * FROM \"APP.DWZ_SPIELER\" \n" + "" +
             "WHERE \"SpielernameL\" LIKE ? AND \"ZPS\" LIKE ?";
     private static final String stmtSelectSpielerVerein = 
-            "SELECT * FROM \"APP.DWZ_SPIELER\" \n" + "" +
+            "SELECT * FROM \"APP.DWZ_SPIELER\" \n" + 
             "WHERE \"SpielernameL\" LIKE ? AND \"ZPS\" = ?";
     
     ////////////////////////////////////////////////////////////////////////////////
