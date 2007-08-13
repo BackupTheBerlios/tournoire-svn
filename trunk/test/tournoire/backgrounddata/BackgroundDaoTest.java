@@ -9,8 +9,6 @@ package tournoire.backgrounddata;
 
 import tournoire.Player;
 import tournoire.District;
-import java.io.File;
-import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,46 +34,13 @@ public class BackgroundDaoTest
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        File dummyTemp = File.createTempFile("dummy", "");
-        tempDir = dummyTemp.getParent();
-        dummyTemp.delete();
-        tmpSpielerCsv = new File(tempDir, "spieler.csv");
-        tmpVerbaendeCsv = new File(tempDir, "verband.csv");
-        tmpVereineCsv = new File(tempDir, "vereine.csv");
-        
-        PrintWriter writer = null;
-        writer = new PrintWriter(tmpSpielerCsv);
-        writer.println("\"ZPS\",\"Mgl-Nr\",\"Status\",\"Spielername\",\"Geschlecht\",\"Spielberechtigung\",\"Geburtsjahr\",\"Letzte-Auswertung\",\"DWZ\",\"Index\",\"FIDE-Elo\",\"FIDE-Titel\",\"FIDE-ID\",\"FIDE-Land\"");
-        writer.println("\"24421\",\"201\",\"\",\"Volokitin,Andrej\",\"M\",\"A\",\"1986\",\"200715\",\"2698\",\"23\",\"2681\",\"GM\",\"14107090\",\"UKR\"");
-        writer.println("\"24421\",\"135\",\"\",\"Bromberger,Stefan\",\"M\",\"D\",\"1982\",\"200730\",\"2461\",\"100\",\"2500\",\"IM\",\"4635248\",\"GER\"");
-        writer.println("\"24420\",\"302\",\"P\",\"Bromberger,Stefan\",\"M\",\"D\",\"1982\",\"200730\",\"2461\",\"100\",\"2500\",\"IM\",\"4635248\",\"GER\"");
-        writer.println("\"23017\",\"106\",\"\",\"Zwack,Hans\",\"M\",\"D\",\"1990\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"");        
-        writer.println("\"23017\",\"107\",\"\",\"Zwick,Herbert\",\"M\",\"D\",\"1980\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"");
-        writer.println("\"21206\",\"252\",\"\",\"Zwack,Hansemann\",\"M\",\"D\",\"1958\",\"\",\"\",\"\",\"\",\"\",\"\",\"\"");
-       
-        writer.close();
-        
-        writer = new PrintWriter(tmpVerbaendeCsv);
-        writer.println("\"Verband\",\"LV\",\"Uebergeordnet\",\"Verbandname\"");
-        writer.println("\"200\",\"2\",\"000\",\"Bayerischer Schachbund\"");
-        writer.println("\"210\",\"2\",\"200\",\"Bezirk Mittelfranken\"");
-        writer.println("\"211\",\"2\",\"210\",\"Kreis Mittelfranken-Mitte\"");
-        writer.println("\"212\",\"2\",\"210\",\"Kreis Mittelfranken-Nord\"");
-        writer.println("\"220\",\"2\",\"200\",\"München\"");
-        writer.close();
-        
-        writer = new PrintWriter(tmpVereineCsv);
-        //writer.println("");
-        writer.close();
-        
+        fixation = new BackGroundFixation();
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception
     {
-        tmpSpielerCsv.delete();
-        tmpVerbaendeCsv.delete();
-        tmpVereineCsv.delete();
+        fixation.cleanUp();
     }
 
     @Before
@@ -94,11 +59,12 @@ public class BackgroundDaoTest
         try
         {
             java.lang.System.out.println("getDatabaseLocation");
-            tournoire.backgrounddata.BackgroundDao instance = new tournoire.backgrounddata.BackgroundDao();
-            java.lang.String expResult = "/home/rca/Tournoire/.backgrounddata/HintergrundDatenbank";
-            java.lang.String result = instance.getDatabaseLocation();
+            BackgroundDao instance = new BackgroundDao();
+            String expResult = "/home/rca/Tournoire/.backgrounddata/HintergrundDatenbank";
+            String result = instance.getDatabaseLocation();
             assertEquals(expResult, result);
-        } catch (AppException ex)
+        } 
+        catch (AppException ex)
         {
             Logger.getLogger("global").log(Level.SEVERE, null, ex);
             fail("Exception occurred");
@@ -110,12 +76,13 @@ public class BackgroundDaoTest
     {
         try
         {
-            java.lang.System.out.println("getDatabaseUrl");
+            System.out.println("getDatabaseUrl");
             tournoire.backgrounddata.BackgroundDao instance = new tournoire.backgrounddata.BackgroundDao();
-            java.lang.String expResult = "jdbc:derby:HintergrundDatenbank";
-            java.lang.String result = instance.getDatabaseUrl();
+            String expResult = "jdbc:derby:HintergrundDatenbank";
+            String result = instance.getDatabaseUrl();
             assertEquals(expResult, result);
-        } catch (AppException ex)
+        } 
+        catch (AppException ex)
         {
             Logger.getLogger("global").log(Level.SEVERE, null, ex);
             fail("Exception occurred");
@@ -129,9 +96,7 @@ public class BackgroundDaoTest
         try
         {
             java.lang.System.out.println("getDisricts");
-            tournoire.backgrounddata.BackgroundDao instance = new tournoire.backgrounddata.BackgroundDao();
-            instance.clear();
-            instance.loadDsbCsvFiles(tempDir);
+            BackgroundDao instance = fixation.createBackgroundDao();
             List<District> result = instance.getDistricts();
             assertEquals(5, result.size());
             boolean found = false;
@@ -161,9 +126,7 @@ public class BackgroundDaoTest
         try
         {
             java.lang.System.out.println("getPlayers");
-            tournoire.backgrounddata.BackgroundDao instance = new tournoire.backgrounddata.BackgroundDao();
-            instance.clear();
-            instance.loadDsbCsvFiles(tempDir);
+            BackgroundDao instance = fixation.createBackgroundDao();
             
             //no player found
             List<Player> result = instance.getPlayers("xxx", 0);
@@ -203,8 +166,6 @@ public class BackgroundDaoTest
     } /* Test of getPlayers* methods, of class BackgroundDao. */
     
     
-    private static String tempDir;
-    private static File tmpSpielerCsv;
-    private static File tmpVerbaendeCsv;
-    private static File tmpVereineCsv;
+    private static BackGroundFixation fixation;
+    
 }
